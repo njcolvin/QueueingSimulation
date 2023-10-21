@@ -26,7 +26,7 @@ class QueueingSystem {
     }
 
     float getLambda() {
-        float effective_rate = (float) this.rho * this.m * this.mu; // lambda
+        float effective_rate = this.rho * this.m * this.mu; // lambda
         if (this.N < 2) // effective rate is lambda + gamma
             effective_rate += this.gamma;
         return effective_rate;
