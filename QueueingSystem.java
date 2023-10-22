@@ -10,6 +10,8 @@ class QueueingSystem {
     float mu, gamma = 5, rho, clock;
     ArrayList<Event> elist;
     boolean done;
+    // lambda = computed arrival rate of second machine
+    float getLambda() { return this.rho * this.m * this.mu; }
 
     QueueingSystem(int K, int m, float mu, float rho) {
         this.K = K;
@@ -29,35 +31,42 @@ class QueueingSystem {
         this.elist.add(i, e);
     }
 
-    float getLambda() {
-        // lambda = computed arrival rate of second machine
-        float effective_rate = this.rho * this.m * this.mu;
-        if (this.N < 2) // effective arrival rate = lambda + gamma (superposition)
-            effective_rate += this.gamma;
-        return effective_rate;
-    }
-
     void run() {
         int num_dep = 0;
         // area = area under the graph of number of customers in system vs time
         float area = 0;
-        // insert first arrival
-        this.insertEvent(new Event(EventType.ARR, Exponential.get(this.getLambda())));
+        // both machines produce components to begin
+        this.insertEvent(new Event(EventType.ARR1, Exponential.get(this.gamma)));
+        this.insertEvent(new Event(EventType.ARR2, Exponential.get(this.getLambda())));
         while (!this.done) {
             // pop off the event list and update clock
             Event currEvent = this.elist.remove(0);
             area += this.N * (currEvent.time - this.clock);
             this.clock = currEvent.time;
+            // handle event
             switch (currEvent.type) {
-                case ARR:
-                    if (this.N == this.K) {
+                case ARR1:
+                    if (this.N >= 2) { 
                         // discard i.e. block
                         // generate next arrival
-                        this.insertEvent(new Event(EventType.ARR, this.clock + Exponential.get(this.getLambda())));
+                        this.insertEvent(new Event(EventType.ARR1, this.clock + Exponential.get(this.gamma)));
                     } else {
                         this.N++;
                         // generate next arrival
-                        this.insertEvent(new Event(EventType.ARR, this.clock + Exponential.get(this.getLambda())));
+                        this.insertEvent(new Event(EventType.ARR1, this.clock + Exponential.get(this.gamma)));
+                        if (this.N <= this.m) // service
+                            this.insertEvent(new Event(EventType.DEP, this.clock + Exponential.get(this.mu)));
+                    }
+                    break;
+                case ARR2:
+                    if (this.N == this.K) {
+                        // discard i.e. block
+                        // generate next arrival
+                        this.insertEvent(new Event(EventType.ARR2, this.clock + Exponential.get(this.getLambda())));
+                    } else {
+                        this.N++;
+                        // generate next arrival
+                        this.insertEvent(new Event(EventType.ARR2, this.clock + Exponential.get(this.getLambda())));
                         if (this.N <= this.m) // service
                             this.insertEvent(new Event(EventType.DEP, this.clock + Exponential.get(this.mu)));
                     }
@@ -72,6 +81,7 @@ class QueueingSystem {
             if (num_dep > 100000)
                 this.done = true;
         }
+        // E[n] = area / t_end
         System.out.println(area / this.clock);
     }
 
