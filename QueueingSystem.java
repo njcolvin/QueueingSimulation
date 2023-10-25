@@ -32,7 +32,7 @@ class QueueingSystem {
     }
 
     void run() {
-        int num_dep = 0;
+        int num_dep = 0, num_arr = 0;
         // area = area under the graph of number of customers in system vs time
         float area = 0;
         // both machines produce components to begin
@@ -52,6 +52,7 @@ class QueueingSystem {
                         this.insertEvent(new Event(EventType.ARR1, this.clock + Exponential.get(this.gamma)));
                     } else {
                         this.N++;
+                        num_arr++;
                         // generate next arrival
                         this.insertEvent(new Event(EventType.ARR1, this.clock + Exponential.get(this.gamma)));
                         if (this.N <= this.m) // service
@@ -65,6 +66,7 @@ class QueueingSystem {
                         this.insertEvent(new Event(EventType.ARR2, this.clock + Exponential.get(this.getLambda())));
                     } else {
                         this.N++;
+                        num_arr++;
                         // generate next arrival
                         this.insertEvent(new Event(EventType.ARR2, this.clock + Exponential.get(this.getLambda())));
                         if (this.N <= this.m) // service
@@ -81,8 +83,13 @@ class QueueingSystem {
             if (num_dep > 100000)
                 this.done = true;
         }
+        System.out.println("ρ = " + this.rho);
         // E[n] = area / t_end
-        System.out.println(area / this.clock);
+        System.out.println(" E[n] = " + area / this.clock);
+        // E[𝜏] = area / total # arrs
+        System.out.println(" E[𝜏] = " + area / num_arr);
+
+        System.out.println();
     }
 
     public static void main(String[] args) {
@@ -92,10 +99,10 @@ class QueueingSystem {
         int K = Integer.parseInt(args[0]);
         int m = Integer.parseInt(args[1]);
         float mu = Float.parseFloat(args[2]);
-        float rho = 0;
+        float rho;
         QueueingSystem sys;
         for (int i = 0; i < 10; i++) {
-            rho += 0.1;
+            rho = (i + 1) / 10f;
             sys = new QueueingSystem(K, m, mu, rho);
             sys.run();
         }
