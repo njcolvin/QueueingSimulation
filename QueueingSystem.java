@@ -1,4 +1,8 @@
 import java.util.ArrayList;
+import java.util.List;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 
 class QueueingSystem {
     
@@ -7,7 +11,8 @@ class QueueingSystem {
     // µ = service rate of a server
     // γ = arrival rate of first machine
     // ρ = utilization of all servers
-    float mu, gamma = 5, rho, clock, expectedNumCust, expectedTimeCust, expectedProbBlock;
+    float mu, gamma = 5, rho, clock, expectedNumCust, actualNumCust, expectedTimeCust,
+    actualTimeCust, expectedProbBlock, actualProbBlock, expectedUtil, actualUtil;
     // λ = computed arrival rate of second machine
     float getLambda() { return this.rho * this.m * this.mu; }
     // state parameters
@@ -71,6 +76,10 @@ class QueueingSystem {
         this.expectedTimeCust = this.expectedNumCust / lambdaAvg;
         // P(block) = λp(k) / λ_avg
         this.expectedProbBlock = this.getLambda() * this.stateProbs.get(this.K) / lambdaAvg;
+        // Utilization = 1/2 * p(1) + p(2) + p(3) + p(4)
+        this.expectedUtil = this.stateProbs.get(1) / 2;
+        for (int i = 2; i <= this.K; i++)
+            this.expectedUtil += this.stateProbs.get(i);
     }
 
     void insertEvent(Event e) {
@@ -84,13 +93,19 @@ class QueueingSystem {
         int numDep = 0, numArr = 0, numBlock = 0;
         // area = area under the graph of number of customers in system vs time
         float area = 0;
+        // utilization
+        this.actualUtil = 0;
         // both machines produce components to begin
         this.insertEvent(new Event(EventType.ARR1, Exponential.get(this.gamma)));
         this.insertEvent(new Event(EventType.ARR2, Exponential.get(this.getLambda())));
         while (!this.done) {
-            // pop off the event list and update clock
+            // pop off the event list, update state
             Event currEvent = this.elist.remove(0);
             area += this.N * (currEvent.time - this.clock);
+            if (this.N == 1)
+                this.actualUtil += (currEvent.time - this.clock) / 2;
+            else if (this.N >= 2)
+                this.actualUtil += (currEvent.time - this.clock);
             this.clock = currEvent.time;
             // handle event
             switch (currEvent.type) {
@@ -137,15 +152,26 @@ class QueueingSystem {
         System.out.println(" State Probabilities");
         for (int i = 0; i <= this.K; i++)
             System.out.println("  p(" + i + ") = " + this.stateProbs.get(i));
-        System.out.println(" Expected E[n] = " + this.expectedNumCust);
+
         // E[n] = area / t_end
-        System.out.println(" Actual E[n]   = " + area / this.clock);
+        System.out.println(" Expected E[n] = " + this.expectedNumCust);
+        this.actualNumCust = area / this.clock;
+        System.out.println(" Actual E[n]   = " + this.actualNumCust);
+
         // E[𝜏] = area / total # arrs
         System.out.println(" Expected E[𝜏] = " + this.expectedTimeCust);
-        System.out.println(" Actual E[𝜏]   = " + area / numArr);
-        // P(block) = total # blocks / total # arrs\
+        this.actualTimeCust = area / numArr;
+        System.out.println(" Actual E[𝜏]   = " + this.actualTimeCust);
+        
+        // P(block) = total # blocks / total # arrs
         System.out.println(" Expected P(block) = " + this.expectedProbBlock);
-        System.out.println(" Actual P(block)   = " + (float) numBlock / numArr);
+        this.actualProbBlock = (float) numBlock / numArr;
+        System.out.println(" Actual P(block)   = " + this.actualProbBlock);
+
+        // Utilization computed similarly to area
+        System.out.println(" Expected Utilization = " + this.expectedUtil);
+        this.actualUtil /= this.clock;
+        System.out.println(" Actual Utilization   = " + this.actualUtil);
         System.out.println();
     }
 
@@ -158,11 +184,50 @@ class QueueingSystem {
         float mu = Float.parseFloat(args[2]);
         float rho;
         QueueingSystem sys;
+        // for graphs
+        ArrayList<Float> rhos = new ArrayList<Float>();
+        ArrayList<Float> eNumCusts = new ArrayList<Float>();
+        ArrayList<Float> eTimeCusts = new ArrayList<Float>();
+        ArrayList<Float> eProbBlocks = new ArrayList<Float>();
+        ArrayList<Float> aNumCusts = new ArrayList<Float>();
+        ArrayList<Float> aTimeCusts = new ArrayList<Float>();
+        ArrayList<Float> aProbBlocks = new ArrayList<Float>();
+        ArrayList<Float> eUtil = new ArrayList<Float>();
+        ArrayList<Float> aUtil = new ArrayList<Float>();
         for (int i = 0; i < 10; i++) {
             rho = (i + 1) / 10f;
+            rhos.add(rho);
             sys = new QueueingSystem(K, m, mu, rho);
             sys.run();
+            eNumCusts.add(sys.expectedNumCust);
+            eTimeCusts.add(sys.expectedTimeCust);
+            eProbBlocks.add(sys.expectedProbBlock);
+            aNumCusts.add(sys.actualNumCust);
+            aTimeCusts.add(sys.actualTimeCust);
+            aProbBlocks.add(sys.actualProbBlock);
+            eUtil.add(sys.expectedUtil);
+            aUtil.add(sys.actualUtil);
+        }
+        ArrayList<ArrayList<Float>> bigList = new ArrayList<ArrayList<Float>>();
+        bigList.add(rhos);
+        bigList.add(eNumCusts);
+        bigList.add(eTimeCusts);
+        bigList.add(eProbBlocks);
+        bigList.add(eUtil);
+        bigList.add(aNumCusts);
+        bigList.add(aTimeCusts);
+        bigList.add(aProbBlocks);
+        bigList.add(aUtil);
+        // write results to file for python script to plot
+        try (PrintWriter writer = new PrintWriter(new FileWriter("results"))) {
+            for (List<Float> floatList : bigList) {
+                for (float number : floatList) {
+                    writer.print(number + " "); // Separate floats within a list with a space
+                }
+                writer.println(); // one list per line
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
-
 }

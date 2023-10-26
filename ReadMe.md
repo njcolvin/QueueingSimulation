@@ -1,3 +1,10 @@
+**Demo**
+
+To run this program:
+    1. compile Java files (javac *.java)
+    2. run QueueingSystem (java QueueingSystem K m µ)
+    3. run plot.py Python script to view graphs (must have matplotlib installed)
+
 **Overview**
 
 - event-driven simulation
