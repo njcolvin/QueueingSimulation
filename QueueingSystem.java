@@ -7,23 +7,24 @@ class QueueingSystem {
     // µ = service rate of a server
     // γ = arrival rate of first machine
     // ρ = utilization of all servers
-    float mu, gamma = 5, rho, clock, E_N, E_Tau, P_b;
-    ArrayList<Event> elist;
-    boolean done;
+    float mu, gamma = 5, rho, clock, expectedNumCust, expectedTimeCust, expectedProbBlock;
     // λ = computed arrival rate of second machine
     float getLambda() { return this.rho * this.m * this.mu; }
+    // state parameters
+    ArrayList<Event> elist;
     ArrayList<Float> stateProbs;
+    boolean done;
 
     QueueingSystem(int K, int m, float mu, float rho) {
         this.K = K;
         this.m = m;
+        this.N = 0;
         this.mu = mu;
         this.rho = rho;
-        this.N = 0;
         this.clock = 0;
         this.elist = new ArrayList<Event>();
-        this.done = false;
         this.stateProbs = new ArrayList<Float>();
+        this.done = false;
         this.computeStateProbs();
         this.computeMetrics();
     }
@@ -31,30 +32,36 @@ class QueueingSystem {
     void computeStateProbs() {
         ArrayList<Float> coefficients = new ArrayList<Float>();
         float numerator = this.getLambda() + this.gamma, denominator = this.mu;
-        coefficients.add(numerator / denominator); // p1 = p0 * (λ + γ) / µ
-        numerator *= this.getLambda() + this.gamma; // (λ + γ)^2
-        denominator *= this.m > 1 ? 2 * this.mu : this.mu; // 2µ^2 or µ^2 
-        coefficients.add(numerator / denominator); // p2 = ...
+        // both machines working, p(1) = p(0) * (λ + γ) / µ
+        coefficients.add(numerator / denominator); 
+        numerator *= this.getLambda() + this.gamma;
+        // multiply µ by number of workers
+        denominator *= this.m > 1 ? 2 * this.mu : this.mu;
+        // both machines working, p(2) = p(0) * (λ + γ)^2 / if(m > 1, 2µ^2, µ^2)
+        coefficients.add(numerator / denominator);
         for (int i = 2; i < this.K; i++) {
+            // only machine 2 working
             numerator *= this.getLambda();
             denominator *= this.m > i ? i * this.mu : this.m * this.mu;
-            coefficients.add(numerator / denominator);
+            // for i >= 2, p(i) = p(0) * coef(p(i-1)) * λ / if(m > i, iµ, mµ)
+            coefficients.add(numerator / denominator); 
         }
-        // compute p0
+        // compute p(0) = 1 / (1 + (λ + γ) / µ + (λ + γ)^2 / if(m > 1, 2µ^2, µ^2) + ...)
         float sum = 1;
         for (float f : coefficients)
             sum += f;
         this.stateProbs.add(1 / sum);
-        // compute p1..pk
+        // compute p(1)..p(K)
         for (int i = 0; i < coefficients.size(); i++)
             this.stateProbs.add(coefficients.get(i) * this.stateProbs.get(0));
     }
 
     void computeMetrics() {
-        // E_N
-        this.E_N = 0;
+        // E[n]
+        this.expectedNumCust = 0;
         for (int i = 0; i <= this.K; i++)
-            E_N += i * this.stateProbs.get(i);
+            expectedNumCust += i * this.stateProbs.get(i);
+        // E[𝜏]
     }
 
     void insertEvent(Event e) {
@@ -80,7 +87,7 @@ class QueueingSystem {
             switch (currEvent.type) {
                 case ARR1:
                     if (this.N >= 2) { 
-                        // discard i.e. block
+                        // discard i.e. block but dont count for simulation
                         // generate next arrival
                         this.insertEvent(new Event(EventType.ARR1, this.clock + Exponential.get(this.gamma)));
                     } else {
@@ -118,13 +125,13 @@ class QueueingSystem {
                 this.done = true;
         }
         System.out.println("ρ = " + this.rho);
-        System.out.println(" Expected E[n] = " + this.E_N);
+        System.out.println(" Expected E[n] = " + this.expectedNumCust);
         // E[n] = area / t_end
         System.out.println(" Actual E[n] = " + area / this.clock);
         // E[𝜏] = area / total # arrs
-        System.out.println(" E[𝜏] = " + area / numArr);
+        System.out.println(" Actual E[𝜏] = " + area / numArr);
         // P_block = total # blocks / total # arrs
-        System.out.println(" P_b = " + (float) numBlock / numArr);
+        System.out.println(" Actual P_b = " + (float) numBlock / numArr);
         System.out.println();
     }
 
