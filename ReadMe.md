@@ -26,7 +26,7 @@
 - when an arrival occurs:
     1. update system time to reflect the time of arrival
     2. increment number of customers in the system if not at full capacity and the arrival is not blocked
-    3. if there is an idle server to accept the arriving customer, then generate a departure event for the new arrival. the departure time is the current system time plus an exponentially distributed length of time with parameter mu
+    3. if there is an idle server to accept the arriving customer, then generate a departure event for the new arrival. the departure time is the current system time plus an exponentially distributed length of time with parameter µ
     4. generate the next arrival event if applicable. the time of the next arrival will be the current system time plus an exponentially distributed amount of time
 - when a departure occurs:
     1. update the system time
