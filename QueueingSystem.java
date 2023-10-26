@@ -32,11 +32,9 @@ class QueueingSystem {
         ArrayList<Float> coefficients = new ArrayList<Float>();
         float numerator = this.getLambda() + this.gamma, denominator = this.mu;
         coefficients.add(numerator / denominator); // p1 = p0 * (λ + γ) / µ
-        if (this.K > 1) {
-            numerator *= this.getLambda() + this.gamma; // (λ + γ)^2
-            denominator *= this.m > 1 ? 2 * this.mu : this.mu; // 2µ^2 or µ^2 
-            coefficients.add(numerator / denominator); // p2 = ...
-        }
+        numerator *= this.getLambda() + this.gamma; // (λ + γ)^2
+        denominator *= this.m > 1 ? 2 * this.mu : this.mu; // 2µ^2 or µ^2 
+        coefficients.add(numerator / denominator); // p2 = ...
         for (int i = 2; i < this.K; i++) {
             numerator *= this.getLambda();
             denominator *= this.m > i ? i * this.mu : this.m * this.mu;
