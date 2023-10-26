@@ -57,11 +57,20 @@ class QueueingSystem {
     }
 
     void computeMetrics() {
-        // E[n]
+        // E[n] = i * p(i) for i = 0..K
         this.expectedNumCust = 0;
         for (int i = 0; i <= this.K; i++)
             expectedNumCust += i * this.stateProbs.get(i);
-        // E[𝜏]
+        // E[𝜏] = E[n] / λ_avg (Little's Law)
+        // λ_avg = ((λ + γ)p(0) + (λ + γ)p(1) + λp(2) + ... + λp(k))
+        float lambdaAvg = 0;
+        lambdaAvg += (this.getLambda() + this.gamma) * this.stateProbs.get(0);
+        lambdaAvg += (this.getLambda() + this.gamma) * this.stateProbs.get(1);
+        for (int i = 2; i <= this.K; i++)
+            lambdaAvg += this.getLambda() * this.stateProbs.get(i);
+        this.expectedTimeCust = this.expectedNumCust / lambdaAvg;
+        // P(block) = λp(k) / λ_avg
+        this.expectedProbBlock = this.getLambda() * this.stateProbs.get(this.K) / lambdaAvg;
     }
 
     void insertEvent(Event e) {
@@ -125,13 +134,18 @@ class QueueingSystem {
                 this.done = true;
         }
         System.out.println("ρ = " + this.rho);
+        System.out.println(" State Probabilities");
+        for (int i = 0; i <= this.K; i++)
+            System.out.println("  p(" + i + ") = " + this.stateProbs.get(i));
         System.out.println(" Expected E[n] = " + this.expectedNumCust);
         // E[n] = area / t_end
-        System.out.println(" Actual E[n] = " + area / this.clock);
+        System.out.println(" Actual E[n]   = " + area / this.clock);
         // E[𝜏] = area / total # arrs
-        System.out.println(" Actual E[𝜏] = " + area / numArr);
-        // P_block = total # blocks / total # arrs
-        System.out.println(" Actual P_b = " + (float) numBlock / numArr);
+        System.out.println(" Expected E[𝜏] = " + this.expectedTimeCust);
+        System.out.println(" Actual E[𝜏]   = " + area / numArr);
+        // P(block) = total # blocks / total # arrs\
+        System.out.println(" Expected P(block) = " + this.expectedProbBlock);
+        System.out.println(" Actual P(block)   = " + (float) numBlock / numArr);
         System.out.println();
     }
 
