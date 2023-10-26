@@ -44,7 +44,7 @@
     * average number of jobs in the system
     * average time a job spends in the system
     * blocking probability versus ρ, ρ = λ / (m * µ)
-        * for each plot, rho should range between 0.1 and 1.0 with at least 10 data points
+        * for each plot, ρ should range between 0.1 and 1.0 with at least 10 data points
         * values of λ can be determined from µ, ρ, and m (run the simulation for λ = 0.1 * m * µ, 0.2 * m * µ, etc.)
         * for each data point, run the simulation for >= 100000 departures
 
@@ -52,7 +52,7 @@
 
 - do not hard code values of K, m, and µ into the program. these are user inputs to the program.
 
-1. let µ = 4 components / min, γ = 5 components / min, plot the average number of components in the system vs rho for m = 2 and K = 4. include theoretical values of the expected number of customers versus ρ. calculate these by programming or by hand.
+1. let µ = 4 components / min, γ = 5 components / min, plot the average number of components in the system vs ρ for m = 2 and K = 4. include theoretical values of the expected number of customers versus ρ. calculate these by programming or by hand.
 2. plot average time spent in the system versus ρ with µ = 4, γ = 5, m = 2, and K = 4. plot theoretical values on the same graph.
 3. plot the fraction of components that are blocked (discarded) versus ρ, same parameters and include theoretical values.
 4. plot total utilization of the system versus ρ similarly.
