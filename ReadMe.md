@@ -17,7 +17,7 @@
 
 **Queueing System**
 
-- two machines generate components for packaging:
+- two machines generate components according to Poisson process for packaging:
     - first machine has rate γ components / min
     - second machine has rate λ components / min
 - if there are >= 2 components in the system, the first machine stops
