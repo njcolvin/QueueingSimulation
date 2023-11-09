@@ -39,14 +39,17 @@ class QueueingSystem {
     }
 
     void run() {
-        int num_dep = 0, num_arr = 0;
+        int numDep = 0, numArr = 0;
         // area = area under the graph of number of customers in system vs time
         float area = 0;
+        // current event is for popping off event list
+        // next arrival is for marking last generated λ arrival that is replaced with λ + γ when N = 2 and departure
+        Event currEvent, nextArrival;
         // insert first arrival
         this.insertEvent(new Event(EventType.ARR, Exponential.get(this.getArrivalRate())));
         while (!this.done) {
             // pop off the event list and update clock
-            Event currEvent = this.elist.remove(0);
+            currEvent = this.elist.remove(0);
             area += this.N * (currEvent.time - this.clock);
             this.clock = currEvent.time;
             switch (currEvent.type) {
@@ -54,21 +57,23 @@ class QueueingSystem {
                     if (this.N == this.K) {
                         // discard i.e. block
                         // generate next arrival
-                        this.insertEvent(new Event(EventType.ARR, this.clock + Exponential.get(this.getArrivalRate())));
+                        nextArrival = new Event(EventType.ARR, this.clock + Exponential.get(this.getArrivalRate()));
+                        this.lambdaArr = nextArrival;
+                        this.insertEvent(nextArrival);
                     } else {
                         this.N++;
-                        num_arr++;
+                        numArr++;
+                        nextArrival = new Event(EventType.ARR, this.clock + Exponential.get(this.getArrivalRate()));
                         // generate next arrival
-                        Event nextArr = new Event(EventType.ARR, this.clock + Exponential.get(this.getArrivalRate()));
                         if (this.N >= 2) // mark
-                            this.lambdaArr = nextArr;
-                        this.insertEvent(nextArr);
+                            this.lambdaArr = nextArrival;
+                        this.insertEvent(nextArrival);
                         if (this.N <= this.m) // service
                             this.insertEvent(new Event(EventType.DEP, this.clock + Exponential.get(this.mu)));
                     }
                     break;
                 case DEP:
-                    num_dep++;
+                    numDep++;
                     this.N--;
                     if (this.N == 1 && this.elist.contains(this.lambdaArr)) { // replace λ arrival with λ + γ
                         this.elist.remove(this.lambdaArr);
@@ -79,14 +84,14 @@ class QueueingSystem {
                         this.insertEvent(new Event(EventType.DEP, this.clock + Exponential.get(this.mu)));
                     break;
             }
-            if (num_dep > 100000)
+            if (numDep > 100000)
                 this.done = true;
         }
         System.out.println("ρ = " + this.rho);
         // E[n] = area / t_end
         System.out.println(" E[n] = " + area / this.clock);
         // E[𝜏] = area / total # arrs
-        System.out.println(" E[𝜏] = " + area / num_arr);
+        System.out.println(" E[𝜏] = " + area / numArr);
         System.out.println();
     }
 
